@@ -125,18 +125,29 @@ async def serve_index():
 @app.post("/api/chat")
 async def chat_endpoint(req: ChatRequest):
     """
-    Main chat endpoint. Resolves admissions, director, COE, proctor,
-    faculty, placements, library, canteens, hostels, fees, and coursework.
+    Main chat endpoint. Processes student queries using the
+    ABES academic reasoning engine.
     """
+    response_data = StudentSupportEngine.get_focused_response(
+        req.query,
+        req.context
+    )
+
     current_session = AuthService.get_current_session()
-    actor_email = current_session["email"] if current_session else "guest.student@abes.ac.in"
+    actor_email = (
+        current_session["email"]
+        if current_session
+        else "guest.student@abes.ac.in"
+    )
+
     AuthService.log_security_event(
         "QUERY_PROCESSED",
         actor_email,
-        f"Query: '{req.query[:45]}' -> {response_data.get('category')}"
+        f"Query: '{req.query[:45]}' -> "
+        f"{response_data.get('category', 'General')}"
     )
-    return response_data
 
+    return response_data
 
 # =========================================================================
 # 3. STUDENT ACADEMIC & FINANCIAL TOOLS (FORMS & PROCESSING)
